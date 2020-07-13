@@ -25,29 +25,28 @@ sub new {
 
 	} else {
 
-		open FILE, $file or do {
+		open my $fh, '<', $file or do {
 			warn "$class: File $file does not exist or cannot be read: $!";
 			return undef;
 		};
 
 		# make sure dos-type systems can handle it...
-		binmode FILE;
+		binmode $fh;
 
 		%data = (
 			'filename'   => $file,
 			'filesize'   => -s $file,
-			'fileHandle' => \*FILE,
+			'fileHandle' => $fh,
 		);
 	}
 
 	if ( _init(\%data) ) {
-		_loadInfo(\%data);
-		_loadComments(\%data);
+		_load_info(\%data);
+		_load_comments(\%data);
 		_calculateTrackLength(\%data);
 	}
 
 	undef $data{'fileHandle'};
-	close FILE;
 
 	return bless \%data, $class;
 }
@@ -68,7 +67,7 @@ sub comment_tags {
 
 	my %keys = ();
 
-	return grep( !$keys{$_}++, @{$self->{'COMMENT_KEYS'}});
+	return grep { !$keys{$_}++ } @{$self->{'COMMENT_KEYS'}};
 }
 
 sub comment {
@@ -94,17 +93,17 @@ sub _init {
 	my $data = shift;
 
 	# check the header to make sure this is actually an Ogg-Vorbis file
-	$data->{'startInfoHeader'} = _checkHeader($data) || return undef;
+	$data->{'startInfoHeader'} = _check_header($data) || return undef;
 	
 	return 1;
 }
 
-sub _skipID3Header {
+sub _skip_id3_header {
 	my $fh = shift;
 
 	read $fh, my $buffer, 3;
 	
-	my $byteCount = 3;
+	my $byte_count = 3;
 	
 	if ($buffer eq 'ID3') {
 
@@ -112,11 +111,11 @@ sub _skipID3Header {
 
 			my $found;
 			if (($found = index($buffer, OGGHEADERFLAG)) >= 0) {
-				$byteCount += $found;
-				seek $fh, $byteCount, 0;
+				$byte_count += $found;
+				seek $fh, $byte_count, 0;
 				last;
 			} else {
-				$byteCount += 4096;
+				$byte_count += 4096;
 			}
 		}
 
@@ -127,20 +126,20 @@ sub _skipID3Header {
 	return tell($fh);
 }
 
-sub _checkHeader {
+sub _check_header {
 	my $data = shift;
 
 	my $fh = $data->{'fileHandle'};
 	my $buffer;
-	my $pageSegCount;
+	my $page_seg_count;
 
 	# stores how far into the file we've read, so later reads into the file can
 	# skip right past all of the header stuff
 
-	my $byteCount = _skipID3Header($fh);
+	my $byte_count = _skip_id3_header($fh);
 	
 	# Remember the start of the Ogg data
-	$data->{startHeader} = $byteCount;
+	$data->{startHeader} = $byte_count;
 
 	# check that the first four bytes are 'OggS'
 	read($fh, $buffer, 27);
@@ -150,7 +149,7 @@ sub _checkHeader {
 		return undef;
 	}
 
-	$byteCount += 4;
+	$byte_count += 4;
 
 	# check the stream structure version (1 byte, should be 0x00)
 	if (ord(substr($buffer, 4, 1)) != 0x00) {
@@ -158,7 +157,7 @@ sub _checkHeader {
 		return undef;
 	}
 
-	$byteCount += 1;
+	$byte_count += 1;
 
 	# check the header type flag 
 	# This is a bitfield, so technically we should check all of the bits
@@ -170,15 +169,15 @@ sub _checkHeader {
 		warn "Invalid header type flag (trying to go ahead anyway).";
 	}
 
-	$byteCount += 1;
+	$byte_count += 1;
 
 	# read the number of page segments
-	$pageSegCount = ord(substr($buffer, 26, 1));
-	$byteCount += 21;
+	$page_seg_count = ord(substr($buffer, 26, 1));
+	$byte_count += 21;
 
-	# read $pageSegCount bytes, then throw 'em out
-	seek($fh, $pageSegCount, 1);
-	$byteCount += $pageSegCount;
+	# read $page_seg_count bytes, then throw 'em out
+	seek($fh, $page_seg_count, 1);
+	$byte_count += $page_seg_count;
 
 	# check packet type. Should be 0x01 (for indentification header)
 	read($fh, $buffer, 7);
@@ -187,7 +186,7 @@ sub _checkHeader {
 		return undef;
 	}
 
-	$byteCount += 1;
+	$byte_count += 1;
 
 	# check that the packet identifies itself as 'vorbis'
 	if (substr($buffer, 1, 6) ne 'vorbis') {
@@ -195,19 +194,19 @@ sub _checkHeader {
 		return undef;
 	}
 
-	$byteCount += 6;
+	$byte_count += 6;
 
 	# at this point, we assume the bitstream is valid
-	return $byteCount;
+	return $byte_count;
 }
 
-sub _loadInfo {
+sub _load_info {
 	my $data = shift;
 
 	my $start = $data->{'startInfoHeader'};
 	my $fh    = $data->{'fileHandle'};
 
-	my $byteCount = $start + 23;
+	my $byte_count = $start + 23;
 	my %info = ();
 
 	seek($fh, $start, 0);
@@ -244,12 +243,12 @@ sub _loadInfo {
 	# bitrate_window is -1 in the current version of vorbisfile
 	$info{'bitrate_window'} = -1;
 
-	$data->{'startCommentHeader'} = $byteCount;
+	$data->{'startCommentHeader'} = $byte_count;
 
 	$data->{'INFO'} = \%info;
 }
 
-sub _loadComments {
+sub _load_comments {
 	my $data = shift;
 
 	my $fh    = $data->{'fileHandle'};
@@ -305,23 +304,23 @@ sub _loadComments {
 		
 		# continue processing the current page
 		# page sequence number
-		my $pageNum = Get32u(\$buff, 18);
+		my $page_num = Get32u(\$buff, 18);
 
 		# number of segments
 		my $nseg    = Get8u(\$buff, 26);
 
 		# calculate total data length
-		my $dataLen = Get8u(\$buff, 27);
+		my $data_len = Get8u(\$buff, 27);
 		
 		if ($nseg) {
 			read( $fh, $buff, $nseg-1 ) == $nseg-1 or last;
 			my @segs = unpack('C*', $buff);
 			# could check that all these (but the last) are 255...
-			foreach (@segs) { $dataLen += $_ }
+			foreach (@segs) { $data_len += $_ }
 		}
 
 		if (defined $page) {
-			if ($page == $pageNum) {
+			if ($page == $page_num) {
 				++$page;
 			} else {
 				warn "Missing page(s) in Ogg file\n";
@@ -330,7 +329,7 @@ sub _loadComments {
 		}
 		
 		# read page data
-		read($fh, $buff, $dataLen) == $dataLen or last;
+		read($fh, $buff, $data_len) == $data_len or last;
 
 		if (defined $val{$stream}) {
 			# add this continuation page
@@ -590,9 +589,9 @@ Andrew Molloy E<lt>amolloy@kaizolabs.comE<gt>
 Dan Sully E<lt>daniel | at | cpan.orgE<gt>
 
 =head1 COPYRIGHT
- 
+
 Copyright (c) 2003, Andrew Molloy.  All Rights Reserved.
- 
+
 Copyright (c) 2005-2009, Dan Sully.  All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it
