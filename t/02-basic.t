@@ -10,7 +10,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More;
 use Ogg::Vorbis::Header::PurePerl;
 
 #########################
@@ -34,3 +34,5 @@ ok($ogg->comment('album') eq 'this=that');
 
 # Make sure we're getting the right track length
 ok($ogg->info->{'length'} == 0);
+
+done_testing();
