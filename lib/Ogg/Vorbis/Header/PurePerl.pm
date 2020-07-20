@@ -420,30 +420,44 @@ sub _calculate_track_length {
 	if (($data->{'filesize'} - $data->{'INFO'}{'offset'}) > ($data->{'INFO'}{'blocksize_0'} * 2)) {
 
 		$len = $data->{'INFO'}{'blocksize_0'} * 2;
+	} elsif ($data->{'filesize'} < $data->{'INFO'}{'blocksize_0'}) {
+		$len = $data->{'filesize'};
 	} else {
 		$len = $data->{'INFO'}{'blocksize_0'};
 	}
 
-	if ($len == 0) {
+	if ($data->{'INFO'}{'blocksize_0'} == 0) {
 		print "Ogg::Vorbis::Header::PurePerl:\n";
 		warn "blocksize_0 is 0! Should be a power of 2! http://www.xiph.org/ogg/vorbis/doc/vorbis-spec-ref.html\n";
 		return;
 	}
 
 	seek($fh, -$len, 2);
-	read($fh, my $buf, $len);
 
+	my $buf = '';
 	my $found_header = 0;
+	my $block = $len;
 
-	for (my $i = 0; $i < $len; $i++) {
-
-		last if length($buf) < 4;
-
-		if (substr($buf, $i, 4) eq OGGHEADERFLAG) {
-			substr($buf, 0, ($i+4), '');
-			$found_header = 1;
-			last;
+	SEEK:
+	while ($found_header == 0 && read($fh, $buf, $len)) {
+		# search the last read $block bytes for Ogg header flag
+		# the search is conducted backwards so that the last flag
+		# is found first
+		for (my $i = $block; $i >= 0; $i--) {
+			if (substr($buf, $i, 4) eq OGGHEADERFLAG) {
+				substr($buf, 0, ($i+4), '');
+				$found_header = 1;
+				last SEEK;
+			}
 		}
+
+		# already read the whole file?
+		last if $len == $data->{'filesize'};
+
+		$len += $block;
+		$len = $data->{'filesize'} if $len > $data->{'filesize'};
+
+		seek($fh, -$len, 2);
 	}
 
 	unless ($found_header) {
