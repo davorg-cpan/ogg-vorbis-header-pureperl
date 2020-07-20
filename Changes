@@ -1,5 +1,10 @@
 Revision history for Perl module Ogg::Vorbis::Header::PurePerl.
 
+1.03 2020-07-20 DAVECROSS
+
+    - Give track length a default value of zero
+    - Merge patch about track length from Debian Perl group
+
 1.02 2020-07-16 DAVECROSS
 
     - Point to new Github repo
