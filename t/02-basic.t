@@ -40,9 +40,6 @@ is($ogg->comment('artist'), 'maloi', 'Got artist again');
 is($ogg->comment('album'), 'this=that', 'Got title');
 
 # Make sure we're getting the right track length
-TODO: {
-  local $TODO = 'This is broken';
-  is($ogg->info->{'length'}, 0, 'Got length');
-}
+is($ogg->info->{'length'}, 0, 'Got length');
 
 done_testing();
