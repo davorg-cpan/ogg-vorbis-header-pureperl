@@ -85,7 +85,7 @@ sub comment {
 sub path {
 	my $self = shift;
 
-	return $self->{'fileName'};
+	return $self->{'filename'};
 }
 
 # "private" methods
