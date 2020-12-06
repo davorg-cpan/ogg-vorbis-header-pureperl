@@ -1,6 +1,6 @@
 Revision history for Perl module Ogg::Vorbis::Header::PurePerl.
 
-1.04 2020-12-06 DAVECROSS
+1.05 2020-12-06 DAVECROSS
 
     - Fix division by zero error (RT #88374)
     - Add bugtracker info
