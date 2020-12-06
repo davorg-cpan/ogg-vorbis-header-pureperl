@@ -478,7 +478,11 @@ sub _calculate_track_length {
 
 	if ($granule_position && $data->{'INFO'}{'rate'}) {
 		$data->{'INFO'}{'length'}          = int($granule_position / $data->{'INFO'}{'rate'});
-		$data->{'INFO'}{'bitrate_average'} = sprintf( "%d", ( $data->{'filesize'} * 8 ) / $data->{'INFO'}{'length'} );
+                if ($data->{'INFO'}{'length'}) {
+			$data->{'INFO'}{'bitrate_average'} = sprintf( "%d", ( $data->{'filesize'} * 8 ) / $data->{'INFO'}{'length'} );
+		} else {
+			$data->{'INFO'}{'bitrate_average'} = 0;
+		}
 	} else {
 		$data->{'INFO'}{'length'} = 0;
 	}
