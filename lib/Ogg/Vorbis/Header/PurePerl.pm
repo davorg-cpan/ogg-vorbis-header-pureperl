@@ -7,7 +7,7 @@ use warnings;
 # First four bytes of stream are always OggS
 use constant OGGHEADERFLAG => 'OggS';
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
 sub new {
 	my $class = shift;
