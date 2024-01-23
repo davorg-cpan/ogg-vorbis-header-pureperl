@@ -57,11 +57,11 @@ WriteMakefile(
             resources => {
                 repository  => {
                     type => 'git',
-                    web  => 'https://github.com/davorg/perl-ogg-vorbis-header-pureperl',
-                    url  => 'https://github.com/davorg/perl-ogg-vorbis-header-pureperl.git',
+                    web  => 'https://github.com/davorg-cpan/perl-ogg-vorbis-header-pureperl',
+                    url  => 'https://github.com/davorg-cpan/perl-ogg-vorbis-header-pureperl.git',
                 },
                 bugtracker  => {
-                    web  => 'https://github.com/davorg/perl-ogg-vorbis-header-pureperl/issues',
+                    web  => 'https://github.com/davorg-cpan/perl-ogg-vorbis-header-pureperl/issues',
                 },
             },
           })
